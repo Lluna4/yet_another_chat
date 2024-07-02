@@ -6,11 +6,24 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/epoll.h>
+#include "lib/user.h"
 #define MAX_EVENTS 1024
 
-int connected_clients[1024] = {0}; //make auto scaling array
-int connected_index = 0;
 int epfd = 0;
+struct users connected = {0};
+
+int startswith(char *buf, char *str)
+{
+	int index = 0;
+
+	while (buf[index] != '\0' && str[index] != '\0')
+	{
+		if (buf[index] != str[index])
+			return 0;
+		index++;
+	}
+	return 1;
+}
 
 void add_to_list(int fd, int epfd)
 {
@@ -33,6 +46,8 @@ void *accept_thread(void *arg)
 	{
 		int new_fd = accept(socketfd, NULL, NULL);
 		add_to_list(new_fd, epfd);
+		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL};
+		add_user(new_user, &connected);
 		printf("Client with socket %i connected to the server\n", new_fd);
 	}
 }
@@ -40,6 +55,8 @@ void *accept_thread(void *arg)
 int main()
 {
 	setvbuf (stdout, NULL, _IONBF, 0);
+	connected.size = 0;
+	connected.users = malloc(sizeof(struct user));
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
 	pthread_t thread;
 	struct sockaddr_in listen_addr = {.sin_addr = 0, .sin_port = htons(2907), .sin_family = AF_INET};
@@ -67,6 +84,7 @@ int main()
 	int events_ready = 0;
 	char *buffer = calloc(4096, sizeof(char));
 	int status = 0;
+	char *send_buffer;
 	
 	while (1)
 	{
@@ -77,10 +95,35 @@ int main()
 			if (status == 0 || status == -1)
 			{
 				remove_from_list(events[i].data.fd, epfd);
+				remove_user(events[i].data.fd, &connected);
+				printf("User %i disconnected\n", events[i].data.fd);
 				continue;
 			}
-			printf("message received %s\n", buffer);
-			memset(buffer, 0, 4096);
+			struct user *a = get_user(events[i].data.fd, &connected);
+			//printf("message received %s\n", buffer);
+			if (startswith(buffer, "/name") == 1)
+			{
+				buffer += strlen("/name ");
+				a->name = strdup(buffer);
+				memset(buffer, 0, 4096);
+				continue;
+			}
+			else if (startswith(buffer, "/pronouns") == 1)
+			{
+				buffer += strlen("/pronouns ");
+				a->pronouns = strdup(buffer);
+				memset(buffer, 0, 4096);
+				continue;
+			}
+			printf("[%s [%s]] %s\n", a->name, a->pronouns, buffer);
+			asprintf(&send_buffer, "[%s [%s]] %s", a->name, a->pronouns, buffer);
+			for (int i = 0; i < connected.size; i++)
+			{
+				send(connected.users[i].socket, send_buffer, 1024, 0);
+			}
+			memset(buffer, 0, 4095);
+			free(send_buffer);
+			send_buffer = NULL;
 		}
 	}
 	pthread_join(thread,NULL);
