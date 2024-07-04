@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <openssl/ssl.h>
 
 int main()
 {
@@ -19,19 +20,25 @@ int main()
 		printf("Connect failed!");
 		return -1;
 	}
+	
+	SSL_CTX *ctx = SSL_CTX_new(TLS_method());
+	SSL *ssl = SSL_new(ctx);
+	SSL_set_fd(ssl, sock);
+	SSL_connect(ssl);
+
 
 	printf("What is your name: ");
 	fgets(buffer, 1023, stdin);
 	buffer[strcspn(buffer, "\n")] = 0;
 	asprintf(&cmd_buffer, "/name %s", buffer);
-	send(sock, cmd_buffer, 1024, 0);
+	SSL_write(ssl, cmd_buffer, 1024);
 	free(cmd_buffer);
 	memset(buffer, 0, 1024);
 	printf("What are your pronouns: ");
 	fgets(buffer, 1023, stdin);
 	buffer[strcspn(buffer, "\n")] = 0;
 	asprintf(&cmd_buffer, "/pronouns %s", buffer);
-	send(sock, cmd_buffer, 1024, 0);
+	SSL_write(ssl, cmd_buffer, 1024);
 	free(cmd_buffer);
 	memset(buffer, 0, 1024);
 
@@ -39,11 +46,11 @@ int main()
 	{
 		fgets(buffer, 1023, stdin);
 		buffer[strlen(buffer)-1] = '\0';
-		send(sock, buffer, 1024, 0);
+		SSL_write(ssl, buffer, 1024);
 		if (buffer[0] != '/')
 		{
-			recv(sock, read_buf, 1024, 0);
-			printf("s\n", read_buf);
+			SSL_read(ssl, read_buf, 1024);
+			printf("\033[A%s\n", read_buf);
 			memset(read_buf, 0, 1024);
 		}
 	}

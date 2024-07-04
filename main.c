@@ -6,11 +6,15 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/epoll.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <unistd.h>
 #include "lib/user.h"
 #define MAX_EVENTS 1024
 
 int epfd = 0;
 struct users connected = {0};
+SSL_CTX *ctx;
 
 int startswith(char *buf, char *str)
 {
@@ -45,10 +49,23 @@ void *accept_thread(void *arg)
 	while (1)
 	{
 		int new_fd = accept(socketfd, NULL, NULL);
-		add_to_list(new_fd, epfd);
-		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL};
+		
+		
+		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL, .ssl = SSL_new(ctx)};
+		SSL_set_fd(new_user.ssl, new_fd);
+		SSL_use_certificate_file(new_user.ssl, "cert.pem", SSL_FILETYPE_PEM);
+		SSL_use_PrivateKey_file(new_user.ssl, "key", SSL_FILETYPE_PEM);
+		int res = SSL_accept(new_user.ssl);
+
+		if (res != 1)
+		{
+			printf("SSL error, %i\n", SSL_get_error(new_user.ssl ,res));
+			close(new_fd);
+			continue;
+		}
 		add_user(new_user, &connected);
 		printf("Client with socket %i connected to the server\n", new_fd);
+		add_to_list(new_fd, epfd);
 	}
 }
 
@@ -61,6 +78,7 @@ int main()
 	pthread_t thread;
 	struct sockaddr_in listen_addr = {.sin_addr = 0, .sin_port = htons(2907), .sin_family = AF_INET};
 	size_t size_addr = sizeof(listen_addr);
+	ctx = SSL_CTX_new(TLS_server_method());
 	
 	if (bind(socketfd, (struct sockaddr *)&listen_addr, size_addr) == -1)
 	{
@@ -89,9 +107,15 @@ int main()
 	while (1)
 	{
 		events_ready = epoll_wait(epfd, events, MAX_EVENTS, -1);
+		if (events_ready == -1)
+		{
+			printf("Fail %s\n", strerror(errno));
+			return errno;
+		}
 		for (int i = 0; i < events_ready;i++)
 		{
-			status = recv(events[i].data.fd, buffer, 4095, 0);
+			struct user *a = get_user(events[i].data.fd, &connected);
+			status = SSL_read(a->ssl, buffer, 4095);
 			if (status == 0 || status == -1)
 			{
 				remove_from_list(events[i].data.fd, epfd);
@@ -99,7 +123,7 @@ int main()
 				printf("User %i disconnected\n", events[i].data.fd);
 				continue;
 			}
-			struct user *a = get_user(events[i].data.fd, &connected);
+			
 			//printf("message received %s\n", buffer);
 			if (startswith(buffer, "/name") == 1)
 			{
@@ -119,7 +143,7 @@ int main()
 			asprintf(&send_buffer, "[%s [%s]] %s", a->name, a->pronouns, buffer);
 			for (int i = 0; i < connected.size; i++)
 			{
-				send(connected.users[i].socket, send_buffer, 1024, 0);
+				SSL_write(connected.users[i].ssl, send_buffer, 1024);
 			}
 			memset(buffer, 0, 4095);
 			free(send_buffer);
@@ -127,4 +151,8 @@ int main()
 		}
 	}
 	pthread_join(thread,NULL);
+	free(connected.users);
+	free(buffer);
+	free(i);
+	return 0;
 }

@@ -22,6 +22,9 @@ void remove_user(int socket, struct users *us)
 	{
 		if (us->users[i].socket == socket)
 		{
+			SSL_free(us->users[i].ssl);
+			free(us->users[i].name);
+			free(us->users[i].pronouns);
 			us->users[i] = (struct user){0};
 			*us = fix_array(i + 1, *us);
 			us->size--;
