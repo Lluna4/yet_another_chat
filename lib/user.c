@@ -1,5 +1,24 @@
 #include "user.h"
 
+struct colors random_color()
+{
+	int r, g, b;
+	r = random();
+	g = random();
+	b = random();
+	struct colors a = {r, g, b};
+
+	return a;
+}
+
+char *color_string(struct colors color, char *str)
+{
+	char *buf;
+	//struct colors color = random_color();
+	asprintf(&buf, "\033[38;2;%i;%i;%im%s%s", color.r, color.g, color.b, str, RESET);
+	return buf;
+}
+
 void add_user(struct user u, struct users *us)
 {
 	us->users = realloc(us->users, (us->size + 1) * sizeof(struct user));

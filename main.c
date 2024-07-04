@@ -9,6 +9,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <unistd.h>
+#include <time.h>
 #include "lib/user.h"
 #define MAX_EVENTS 1024
 
@@ -51,7 +52,7 @@ void *accept_thread(void *arg)
 		int new_fd = accept(socketfd, NULL, NULL);
 		
 		
-		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL, .ssl = SSL_new(ctx)};
+		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL, .ssl = SSL_new(ctx), .col = random_color()};
 		SSL_set_fd(new_user.ssl, new_fd);
 		SSL_use_certificate_file(new_user.ssl, "cert.pem", SSL_FILETYPE_PEM);
 		SSL_use_PrivateKey_file(new_user.ssl, "key", SSL_FILETYPE_PEM);
@@ -71,7 +72,8 @@ void *accept_thread(void *arg)
 
 int main()
 {
-	setvbuf (stdout, NULL, _IONBF, 0);
+	setvbuf(stdout, NULL, _IONBF, 0);
+	srandom(time(NULL));
 	connected.size = 0;
 	connected.users = malloc(sizeof(struct user));
 	int socketfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -139,8 +141,9 @@ int main()
 				memset(buffer, 0, 4096);
 				continue;
 			}
-			printf("[%s [%s]] %s\n", a->name, a->pronouns, buffer);
-			asprintf(&send_buffer, "[%s [%s]] %s", a->name, a->pronouns, buffer);
+			asprintf(&send_buffer, "%s [%s]: %s", color_string(a->col, a->name), a->pronouns, buffer);
+			printf("%s\n", send_buffer);
+			
 			for (int i = 0; i < connected.size; i++)
 			{
 				SSL_write(connected.users[i].ssl, send_buffer, 1024);
