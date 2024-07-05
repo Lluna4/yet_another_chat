@@ -20,8 +20,10 @@ char *color_string(struct colors color, char *str)
 }
 
 char *color_string_gradient(struct colors color, struct colors color2,char *str)
-{
-	char *buf = "";
+{	
+	int lenght = (strlen("\033[38;2;%ii;%ii;%iim") + strlen(RESET)) * strlen(str);
+	char *buf = calloc(lenght + 1, sizeof(char));
+	char *temp;
 	//struct colors color = random_color();
 	int grad_r = abs(color.r - color2.r)/strlen(str);
 	int grad_g = abs(color.g - color2.g)/strlen(str);
@@ -35,7 +37,9 @@ char *color_string_gradient(struct colors color, struct colors color2,char *str)
 	int r = color.r, g = color.g, b = color.b;
 	for(int i = 0; i < strlen(str);i++)
 	{
-		asprintf(&buf, "%s\033[38;2;%i;%i;%im%c%s", buf, r, g, b, str[i], RESET);
+		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[i], RESET);
+		strcat(buf, temp);
+		free(temp);
 		r += grad_r;
 		g += grad_g;
 		b += grad_b;
