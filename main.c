@@ -105,6 +105,8 @@ int main()
 	char *buffer = calloc(4096, sizeof(char));
 	int status = 0;
 	char *send_buffer;
+	struct colors color1 = {214, 2, 112};
+	struct colors color2 = {0, 56, 168};
 	
 	while (1)
 	{
@@ -141,7 +143,7 @@ int main()
 				memset(buffer, 0, 4096);
 				continue;
 			}
-			asprintf(&send_buffer, "%s [%s]: %s", color_string(a->col, a->name), a->pronouns, buffer);
+			asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient(color1,color2, a->name), a->pronouns, buffer);
 			printf("%s\n", send_buffer);
 			
 			for (int i = 0; i < connected.size; i++)

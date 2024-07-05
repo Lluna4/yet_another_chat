@@ -31,6 +31,7 @@ struct users
 
 struct colors random_color();
 char *color_string(struct colors color, char *str);
+char *color_string_gradient(struct colors color, struct colors color2,char *str);
 void add_user(struct user u, struct users *us);
 struct users fix_array(int start, struct users a);
 void remove_user(int socket, struct users *us);

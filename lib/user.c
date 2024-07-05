@@ -19,6 +19,30 @@ char *color_string(struct colors color, char *str)
 	return buf;
 }
 
+char *color_string_gradient(struct colors color, struct colors color2,char *str)
+{
+	char *buf = "";
+	//struct colors color = random_color();
+	int grad_r = abs(color.r - color2.r)/strlen(str);
+	int grad_g = abs(color.g - color2.g)/strlen(str);
+	int grad_b = abs(color.b - color2.b)/strlen(str);
+	if (color.r > color2.r)
+		grad_r *= -1;
+	if (color.g > color2.g)
+		grad_g *= -1;
+	if (color.b > color2.b)
+		grad_b *= -1;
+	int r = color.r, g = color.g, b = color.b;
+	for(int i = 0; i < strlen(str);i++)
+	{
+		asprintf(&buf, "%s\033[38;2;%i;%i;%im%c%s", buf, r, g, b, str[i], RESET);
+		r += grad_r;
+		g += grad_g;
+		b += grad_b;
+	}	
+	return buf;
+}
+
 void add_user(struct user u, struct users *us)
 {
 	us->users = realloc(us->users, (us->size + 1) * sizeof(struct user));
