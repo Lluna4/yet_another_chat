@@ -20,7 +20,8 @@ SSL_CTX *ctx;
 int startswith(char *buf, char *str)
 {
 	int index = 0;
-
+	if (*buf == '\0' && *buf == '\0')
+		return 0;
 	while (buf[index] != '\0' && str[index] != '\0')
 	{
 		if (buf[index] != str[index])

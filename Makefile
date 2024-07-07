@@ -4,7 +4,7 @@ COMPILER_FLAGS = -pthread -lssl lib/user.a
 
 all : main.c
 	$(CC) main.c -o sv.out $(COMPILER_FLAGS)
-	$(CC) cli.c -o cli.out -lssl
+	$(CC) cli.c -o cli.out -lssl -pthread
 
 clean:
 	rm -rf *.out
