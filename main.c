@@ -17,6 +17,26 @@ int epfd = 0;
 struct users connected = {0};
 SSL_CTX *ctx;
 
+//color gradient presets
+struct color_gradient_preset bi_flag = {{214, 2, 112}, {0, 56, 168}, {0}};
+struct color_gradient_preset trans_flag = {{245, 169, 184}, {255, 255, 255}, {91, 206, 250}};
+struct color_gradient_preset non_binary_flag = {{252, 244, 52}, {156, 89, 209}, {0, 0, 0}};
+struct color_gradient_preset lesbian_flag = {{213, 45, 0}, {255, 255, 255},{163, 2, 98}};
+struct color_gradient_preset gay_flag = {{7, 141, 112}, {255, 255, 255},{61, 26, 120}};
+
+size_t character_times(char *buf, char c) //counts how many times c appears in buf
+{
+	int max_size = strlen(buf);
+	int ret = 0;
+
+	for (int i = 0; i < max_size;i++)
+	{
+		if (buf[i] == c)
+			ret++;
+	}
+	return ret;
+}
+
 int startswith(char *buf, char *str)
 {
 	int index = 0;
@@ -53,7 +73,7 @@ void *accept_thread(void *arg)
 		int new_fd = accept(socketfd, NULL, NULL);
 		
 		
-		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL, .ssl = SSL_new(ctx), .col = random_color()};
+		struct user new_user = {.socket = new_fd, .name = NULL, .pronouns = NULL, .ssl = SSL_new(ctx), .col = random_color(), .colors = {0}, .has_gradient = 0, .has_3color_gradient = 0};
 		SSL_set_fd(new_user.ssl, new_fd);
 		SSL_use_certificate_file(new_user.ssl, "cert.pem", SSL_FILETYPE_PEM);
 		SSL_use_PrivateKey_file(new_user.ssl, "key", SSL_FILETYPE_PEM);
@@ -106,8 +126,8 @@ int main()
 	char *buffer = calloc(4096, sizeof(char));
 	int status = 0;
 	char *send_buffer;
-	struct colors color1 = {214, 2, 112};
-	struct colors color2 = {0, 56, 168};
+	//struct colors color1 = {214, 2, 112};
+	//struct colors color2 = {0, 56, 168};
 	
 	while (1)
 	{
@@ -144,7 +164,52 @@ int main()
 				memset(buffer, 0, 4096);
 				continue;
 			}
-			asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient(color1,color2, a->name), a->pronouns, buffer);
+			else if (startswith(buffer, "/preset"))
+			{
+			    buffer += strlen("/preset ");
+				if (strcmp(buffer, "bi") == 0)
+				{
+				    a->colors = bi_flag;
+					a->has_gradient = 1;
+				}
+				if (strcmp(buffer, "trans") == 0)
+				{
+				    a->colors = trans_flag;
+					a->has_gradient = 1;
+					a->has_3color_gradient = 1;
+				}
+				if (strcmp(buffer, "lesbian") == 0)
+				{
+				    a->colors = lesbian_flag;
+					a->has_gradient = 1;
+					a->has_3color_gradient = 1;
+				}
+				if (strcmp(buffer, "gay") == 0)
+				{
+				    a->colors = gay_flag;
+					a->has_gradient = 1;
+					a->has_3color_gradient = 1;
+				}
+				if (strcmp(buffer, "nb") == 0)
+				{
+				    a->colors = non_binary_flag;
+					a->has_gradient = 1;
+					a->has_3color_gradient = 1;
+				}
+				continue;
+			}
+			if (a->has_gradient == 1)
+			{
+			    asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient(a->colors.color1,a->colors.color2, a->name), a->pronouns, buffer);
+			}
+			else if (a->has_3color_gradient == 1 && a->has_gradient == 1)
+			{
+			    asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient3(a->colors.color1,a->colors.color2, a->colors.color3, a->name), a->pronouns, buffer);
+			}
+			else
+			{
+			    asprintf(&send_buffer, "%s [%s]: %s", color_string(a->col, a->name), a->pronouns, buffer);
+			}
 			printf("%s\n", send_buffer);
 			
 			for (int i = 0; i < connected.size; i++)

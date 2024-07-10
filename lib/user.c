@@ -47,6 +47,56 @@ char *color_string_gradient(struct colors color, struct colors color2,char *str)
 	return buf;
 }
 
+char *color_string_gradient3(struct colors color, struct colors color2, struct colors color3,char *str)
+{
+    int lenght = (strlen("\033[38;2;%ii;%ii;%iim") + strlen(RESET)) * strlen(str);
+	char *buf = calloc(lenght + 1, sizeof(char));
+	char *temp;
+	int half_lenght = strlen(str)/2;
+	int rest_lenght = strlen(str) - half_lenght;
+	//struct colors color = random_color();
+	int grad_r_half = abs(color.r - color2.r)/half_lenght;
+	int grad_g_half = abs(color.g - color2.g)/half_lenght;
+	int grad_b_half = abs(color.b - color2.b)/half_lenght;
+	
+	int grad_r_rest = abs(color2.r - color3.r)/rest_lenght;
+	int grad_g_rest= abs(color2.g - color3.g)/rest_lenght;
+	int grad_b_rest = abs(color2.b - color3.b)/rest_lenght;
+	if (color.r > color2.r)
+		grad_r_half *= -1;
+	if (color.g > color2.g)
+		grad_g_half *= -1;
+	if (color.b > color2.b)
+		grad_b_half *= -1;
+	if (color2.r > color3.r)
+		grad_r_rest *= -1;
+	if (color2.g > color3.g)
+		grad_g_rest *= -1;
+	if (color2.b > color3.b)
+		grad_b_rest *= -1;
+	int r_half = color.r, g_half = color.g, b_half = color.b;
+	int r_rest = color2.r, g_rest = color2.g, b_rest = color2.b;
+	for(int i = 0; i < half_lenght;i++)
+	{
+		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r_half, g_half, b_half, str[i], RESET);
+		strcat(buf, temp);
+		free(temp);
+		r_half += grad_r_half;
+		g_half += grad_g_half;
+		b_half += grad_b_half;
+	}
+	for(int i = half_lenght; i < strlen(str);i++)
+	{
+		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r_rest, g_rest, b_rest, str[i], RESET);
+		strcat(buf, temp);
+		free(temp);
+		r_rest += grad_r_rest;
+		g_rest += grad_g_rest;
+		b_rest += grad_b_rest;
+	}
+	return buf;
+}
+
 void add_user(struct user u, struct users *us)
 {
 	us->users = realloc(us->users, (us->size + 1) * sizeof(struct user));

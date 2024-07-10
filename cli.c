@@ -15,6 +15,20 @@
 SSL *ssl;
 int epfd;
 
+void remove_initial_whitespaces(char **buf)
+{
+	char *ptr = *buf;
+	int max_size = strlen(ptr);
+	
+	for (int i = 0;i < max_size;i++)
+	{
+		if (*ptr != ' ')
+			break;
+		ptr++;
+	}
+	*buf = ptr;
+}
+
 char *prompt(char *question, size_t size)
 {
     char *buffer = calloc(size, sizeof(char));
@@ -67,6 +81,7 @@ void *input(void *arg)
     while(1)
     {
         fgets(buffer, 1023, stdin);
+	remove_initial_whitespaces(&buffer);
         buffer[strcspn(buffer, "\n")] = 0;
 	write(pipefd, buffer, 1023);
     }
@@ -93,6 +108,8 @@ int main()
 
 
     char *address = prompt("Address: ", 12);
+    if (strcmp(address, "localhost") == 0)
+	    address = "127.0.0.1";
     if (address == NULL)
         return -1;
     char *port_str = prompt("Port: ", 6);
