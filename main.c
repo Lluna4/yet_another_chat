@@ -198,13 +198,14 @@ int main()
 				}
 				continue;
 			}
-			if (a->has_gradient == 1)
+			if (a->has_gradient == 1 && a->has_3color_gradient == 0)
 			{
 			    asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient(a->colors.color1,a->colors.color2, a->name), a->pronouns, buffer);
 			}
 			else if (a->has_3color_gradient == 1 && a->has_gradient == 1)
 			{
-			    asprintf(&send_buffer, "%s [%s]: %s", color_string_gradient3(a->colors.color1,a->colors.color2, a->colors.color3, a->name), a->pronouns, buffer);
+			    struct colors b[3] = {a->colors.color1, a->colors.color2, a->colors.color3};
+			    asprintf(&send_buffer, "%s [%s]: %s", multicolor_string(b, a->name, 3), a->pronouns, buffer);
 			}
 			else
 			{

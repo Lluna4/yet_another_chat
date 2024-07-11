@@ -1,4 +1,7 @@
 #include "user.h"
+#include <string.h>
+#include <stdlib.h>
+#include <openssl/ssl.h>
 
 struct colors random_color()
 {
@@ -47,52 +50,47 @@ char *color_string_gradient(struct colors color, struct colors color2,char *str)
 	return buf;
 }
 
-char *color_string_gradient3(struct colors color, struct colors color2, struct colors color3,char *str)
+char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 {
+    if (size > strlen(str))
+    {
+        return str;
+    }
     int lenght = (strlen("\033[38;2;%ii;%ii;%iim") + strlen(RESET)) * strlen(str);
 	char *buf = calloc(lenght + 1, sizeof(char));
 	char *temp;
-	int half_lenght = strlen(str)/2;
-	int rest_lenght = strlen(str) - half_lenght;
-	//struct colors color = random_color();
-	int grad_r_half = abs(color.r - color2.r)/half_lenght;
-	int grad_g_half = abs(color.g - color2.g)/half_lenght;
-	int grad_b_half = abs(color.b - color2.b)/half_lenght;
-	
-	int grad_r_rest = abs(color2.r - color3.r)/rest_lenght;
-	int grad_g_rest= abs(color2.g - color3.g)/rest_lenght;
-	int grad_b_rest = abs(color2.b - color3.b)/rest_lenght;
-	if (color.r > color2.r)
-		grad_r_half *= -1;
-	if (color.g > color2.g)
-		grad_g_half *= -1;
-	if (color.b > color2.b)
-		grad_b_half *= -1;
-	if (color2.r > color3.r)
-		grad_r_rest *= -1;
-	if (color2.g > color3.g)
-		grad_g_rest *= -1;
-	if (color2.b > color3.b)
-		grad_b_rest *= -1;
-	int r_half = color.r, g_half = color.g, b_half = color.b;
-	int r_rest = color2.r, g_rest = color2.g, b_rest = color2.b;
-	for(int i = 0; i < half_lenght;i++)
+	int **grad_steps = calloc(size + 1, sizeof(int *));
+	float letter_step = (float)strlen(str)/size;
+	int string_index = 0;
+	for(int i = 0; i < size;i++)
 	{
-		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r_half, g_half, b_half, str[i], RESET);
-		strcat(buf, temp);
-		free(temp);
-		r_half += grad_r_half;
-		g_half += grad_g_half;
-		b_half += grad_b_half;
+	    grad_steps[i] = calloc(4, sizeof(int));
+		grad_steps[i][0] = abs(color_arr[i].r - color_arr[i+1].r)/letter_step;
+		grad_steps[i][1] = abs(color_arr[i].g - color_arr[i+1].g)/letter_step;
+		grad_steps[i][2] = abs(color_arr[i].b - color_arr[i+1].b)/letter_step;
+		if (color_arr[i].r > color_arr[i+1].r)
+			grad_steps[i][0] *= -1;
+		if (color_arr[i].g > color_arr[i+1].g)
+			grad_steps[i][1] *= -1;
+		if (color_arr[i].b> color_arr[i+1].b)
+			grad_steps[i][2] *= -1;
 	}
-	for(int i = half_lenght; i < strlen(str);i++)
+	
+	for (int i = 0; i< size;i++)
 	{
-		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r_rest, g_rest, b_rest, str[i], RESET);
-		strcat(buf, temp);
-		free(temp);
-		r_rest += grad_r_rest;
-		g_rest += grad_g_rest;
-		b_rest += grad_b_rest;
+	    int r = color_arr[i].r, g = color_arr[i].g, b = color_arr[i].b;
+		if (i == size -1)
+		    letter_step = strlen(str) - string_index;
+		for (int x = 0; x < letter_step;x++)
+		{
+    		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[string_index], RESET);
+    		strcat(buf, temp);
+    		free(temp);
+    		r += grad_steps[i][0];
+    		g += grad_steps[i][1];
+    		b += grad_steps[i][2];
+            string_index++;
+		}
 	}
 	return buf;
 }

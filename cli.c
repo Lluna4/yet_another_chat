@@ -1,3 +1,4 @@
+#include "lib/user.h"
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -68,9 +69,9 @@ void *read_sock(void *arg)
     while (1)
     {
         SSL_read(ssl, buffer, 1023);
-	if (strlen(buffer) > 4)
-		write(pipefd, buffer, 1023);
-	memset(buffer, 0, 1024);
+        if (strlen(buffer) > 4)
+            write(pipefd, buffer, 1023);
+	   memset(buffer, 0, 1024);
     }
 }
 
@@ -81,9 +82,15 @@ void *input(void *arg)
     while(1)
     {
         fgets(buffer, 1023, stdin);
-	remove_initial_whitespaces(&buffer);
+        remove_initial_whitespaces(&buffer);
         buffer[strcspn(buffer, "\n")] = 0;
-	write(pipefd, buffer, 1023);
+        if (strlen(buffer) < 1)
+        {
+            memset(buffer, 0, 1024);
+            continue;
+        }
+        write(pipefd, buffer, 1023);
+        memset(buffer, 0, 1024);
     }
 }
 
@@ -122,17 +129,29 @@ int main()
         printf("connect failed: %s\n", strerror(errno));
         return -1;
     }
-
+    
     SSL_CTX *ctx = SSL_CTX_new(TLS_method());
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sock);
     SSL_connect(ssl);
 	
+    printf("Connected!\n");
     epfd = epoll_create1(0);
+    if (epfd == -1)
+    {
+        printf("Message listening failed wtith error %s\n", strerror(errno));
+        return -1;
+    }
     pipe(fildes_recv);
     pipe(fildes_send);
     int *pipefd_recv = malloc(sizeof(int));
     int *pipefd_send = malloc(sizeof(int));
+    if (pipefd_recv == NULL || pipefd_send == NULL)
+    {
+        struct colors red = {255, 0, 0};
+        printf("%s", color_string(red, "Memory allocation failed\n"));
+        return -1;
+    }
     *pipefd_recv = fildes_recv[1];
     *pipefd_send = fildes_send[1];
 
@@ -152,24 +171,26 @@ int main()
 
     while(1)
     {
-	events_ready = epoll_wait(epfd, events, MAX_EVENTS, -1);
-
-	for (int i = 0; i < events_ready;i++)
-	{
-		if (events[i].data.fd == fildes_recv[0])
-		{
-			read(events[i].data.fd, buffer, 1023);
-			printf("%s\n", buffer);
-			memset(buffer, 0, 1024);
-		}
-		else if(events[i].data.fd == fildes_send[0])
-		{
-			read(events[i].data.fd, buffer, 1023);
-			SSL_write(ssl, buffer, 1023);
-			memset(buffer, 0, 1024);
-			printf("\033[A");
-		}
-	}
+    	events_ready = epoll_wait(epfd, events, MAX_EVENTS, -1);
+    
+    	for (int i = 0; i < events_ready;i++)
+    	{
+    		if (events[i].data.fd == fildes_recv[0])
+    		{
+    			read(events[i].data.fd, buffer, 1023);
+    			printf("%s\n", buffer);
+    			memset(buffer, 0, 1024);
+    		}
+    		else if(events[i].data.fd == fildes_send[0])
+    		{
+    			read(events[i].data.fd, buffer, 1023);
+    			SSL_write(ssl, buffer, 1023);
+    			printf("\033[A");
+    			if (buffer[0] == '/')
+    			    printf("\x1b[2K");
+    			memset(buffer, 0, 1024);
+    		}
+    	}
     }
 
     free(buffer);
