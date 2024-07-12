@@ -60,7 +60,8 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 	char *buf = calloc(lenght + 1, sizeof(char));
 	char *temp;
 	int **grad_steps = calloc(size + 1, sizeof(int *));
-	float letter_step = (float)strlen(str)/size;
+	int transitions = size - 1;
+	float letter_step = (float)strlen(str)/(transitions);
 	int string_index = 0;
 	for(int i = 0; i < size;i++)
 	{
@@ -75,12 +76,13 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 		if (color_arr[i].b> color_arr[i+1].b)
 			grad_steps[i][2] *= -1;
 	}
-	
-	for (int i = 0; i< size;i++)
+	for (int i = 0; i< transitions;i++)
 	{
-	    int r = color_arr[i].r, g = color_arr[i].g, b = color_arr[i].b;
-		if (i == size -1)
-		    letter_step = strlen(str) - string_index;
+	    int r = 0, g = 0, b = 0;
+	    if (i == 0)
+	        r = color_arr[i].r, g = color_arr[i].g, b = color_arr[i].b;
+		else
+		    r = color_arr[i].r + grad_steps[i][0], g = color_arr[i].g + grad_steps[i][1], b = color_arr[i].b + grad_steps[i][2];
 		for (int x = 0; x < letter_step;x++)
 		{
     		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[string_index], RESET);
