@@ -56,14 +56,18 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
     {
         return str;
     }
-    int lenght = (strlen("\033[38;2;%ii;%ii;%iim") + strlen(RESET)) * strlen(str);
+    int lenght = (strlen("\033[38;2;%iii;%iii;%iiim") + strlen(RESET)) * strlen(str);
 	char *buf = calloc(lenght + 1, sizeof(char));
 	char *temp;
 	int **grad_steps = calloc(size + 1, sizeof(int *));
 	int transitions = size - 1;
 	float letter_step = (float)strlen(str)/(transitions);
 	int string_index = 0;
+<<<<<<< HEAD
+	for(int i = 0; i < (int)transitions;i++)
+=======
 	for(int i = 0; i < (int)size;i++)
+>>>>>>> 8b4679a9e3dad2361e6b0b360108447afa74ef2b
 	{
 	    grad_steps[i] = calloc(4, sizeof(int));
 		grad_steps[i][0] = abs(color_arr[i].r - color_arr[i+1].r)/letter_step;
@@ -84,6 +88,7 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 	        r = color_arr[i].r, g = color_arr[i].g, b = color_arr[i].b;
 		else
 		    r = color_arr[i].r + grad_steps[i][0], g = color_arr[i].g + grad_steps[i][1], b = color_arr[i].b + grad_steps[i][2];
+		free(grad_steps[i]);
 		for (int x = 0; x < letter_step;x++)
 		{
     		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[string_index], RESET);
@@ -95,6 +100,7 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
             string_index++;
 		}
 	}
+	free(grad_steps);
 	return buf;
 }
 

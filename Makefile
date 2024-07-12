@@ -2,9 +2,9 @@ CC = gcc
 
 COMPILER_FLAGS = -pthread -lssl lib/user.a
 
-all : main.c
-	$(CC) main.c -o sv.out $(COMPILER_FLAGS)
-	$(CC) cli.c -o cli.out $(COMPILER_FLAGS)
+all : src/main.c
+	$(CC) src/main.c -o build/sv.out $(COMPILER_FLAGS)
+	$(CC) src/cli.c -o build/cli.out $(COMPILER_FLAGS)
 
 clean:
 	rm -rf *.out
