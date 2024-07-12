@@ -79,6 +79,7 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 	for (int i = 0; i< transitions;i++)
 	{
 	    int r = 0, g = 0, b = 0;
+		int steps_r = grad_steps[i][0], steps_g = grad_steps[i][1], steps_b = grad_steps[i][2];
 	    if (i == 0)
 	        r = color_arr[i].r, g = color_arr[i].g, b = color_arr[i].b;
 		else
@@ -88,9 +89,9 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
     		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[string_index], RESET);
     		strcat(buf, temp);
     		free(temp);
-    		r += grad_steps[i][0];
-    		g += grad_steps[i][1];
-    		b += grad_steps[i][2];
+    		r += steps_r;
+    		g += steps_g;
+    		b += steps_b;
             string_index++;
 		}
 	}
