@@ -38,7 +38,7 @@ char *color_string_gradient(struct colors color, struct colors color2,char *str)
 	if (color.b > color2.b)
 		grad_b *= -1;
 	int r = color.r, g = color.g, b = color.b;
-	for(int i = 0; i < strlen(str);i++)
+	for(int i = 0; i < (int)strlen(str);i++)
 	{
 		asprintf(&temp, "\033[38;2;%i;%i;%im%c%s", r, g, b, str[i], RESET);
 		strcat(buf, temp);
@@ -63,7 +63,7 @@ char *multicolor_string(struct colors *color_arr, char *str, size_t size)
 	int transitions = size - 1;
 	float letter_step = (float)strlen(str)/(transitions);
 	int string_index = 0;
-	for(int i = 0; i < size;i++)
+	for(int i = 0; i < (int)size;i++)
 	{
 	    grad_steps[i] = calloc(4, sizeof(int));
 		grad_steps[i][0] = abs(color_arr[i].r - color_arr[i+1].r)/letter_step;
